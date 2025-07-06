@@ -1,0 +1,48 @@
+{
+    "sdat-data": [
+        {
+            "documentID": "ID735",
+            "interval": {
+                "startDateTime": "2022-04-28T22:00:00Z",
+                "endDateTime": "2022-04-29T22:00:00Z"
+            },
+            "resolution": 15,
+            "data": [
+                {
+                    "sequence": 1,
+                    "volume": 0.000
+                },
+                {
+                    "sequence": 2,
+                    "volume": 0.900
+                },
+                {
+                    "sequence": 3,
+                    "volume": 0.600
+                }
+            ]
+        },
+        {
+            "documentID": "ID735",
+            "interval": {
+                "startDateTime": "2022-04-28T22:00:00Z",
+                "endDateTime": "2022-04-29T22:00:00Z"
+            },
+            "resolution": 15,
+            "data": [
+                {
+                    "sequence": 1,
+                    "volume": 0.000
+                },
+                {
+                    "sequence": 2,
+                    "volume": 0.900
+                },
+                {
+                    "sequence": 3,
+                    "volume": 0.600
+                }
+            ]
+        }
+    ]
+}
