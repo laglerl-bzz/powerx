@@ -4,6 +4,38 @@
 
 Die PowerX API ist eine REST-basierte Schnittstelle zur Verarbeitung und Verwaltung von Stromzählerdaten. Die API unterstützt das Hochladen, Abrufen und Löschen von sdat- und ESL-Dateien.
 
+## Installation
+
+### Automatische Installation (Windows)
+
+**Voraussetzungen:**
+- Windows 10/11
+- PowerShell 5.1+
+- Python 3.8+
+- Node.js 16+
+
+**Setup:**
+```powershell
+.\setup.ps1
+```
+
+Das Setup-Skript startet automatisch:
+- Backend API auf Port 8000
+- Frontend auf Port 5173
+
+### Manuelle Installation
+
+**Backend starten:**
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# oder
+.venv\Scripts\activate.bat  # Windows
+pip install -r requirements.txt
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
 ## Basis-URL
 
 ```
@@ -203,97 +235,197 @@ curl "http://localhost:8000/clear"
 
 ## Fehlercodes
 
-| HTTP-Status | Beschreibung | Beispiel |
-|-------------|--------------|----------|
-| 200 | Erfolgreich | Daten erfolgreich abgerufen |
-| 400 | Ungültige Anfrage | Falsche Datei oder Parameter |
-| 404 | Nicht gefunden | Endpunkt existiert nicht |
-| 500 | Server-Fehler | Interner Verarbeitungsfehler |
+### HTTP-Status-Codes
 
-### Beispiel-Fehler-Response
+| Status | Beschreibung |
+|--------|--------------|
+| 200 | OK - Erfolgreiche Operation |
+| 400 | Bad Request - Ungültige Anfrage |
+| 404 | Not Found - Ressource nicht gefunden |
+| 500 | Internal Server Error - Server-Fehler |
 
+### Fehlermeldungen
+
+#### Upload-Fehler
 ```json
 {
-  "detail": "Ungültige XML-Datei: Erwartete sdat-Struktur nicht gefunden"
+  "success": false,
+  "error": "Ungültige XML-Datei: Erwartete sdat-Struktur nicht gefunden"
 }
 ```
 
-## Rate Limiting
-
-Aktuell sind keine Rate-Limits implementiert.
-
-## CORS
-
-Die API unterstützt Cross-Origin-Requests für die folgenden Domains:
-- `http://localhost:5173` (Frontend Development)
-
-## Beispiele
-
-### Python
-
-```python
-import requests
-
-# ESL-Daten abrufen
-response = requests.get("http://localhost:8000/data-esl")
-esl_data = response.json()
-
-# SDAT-Daten abrufen
-response = requests.get("http://localhost:8000/data-sdat")
-sdat_data = response.json()
-
-# Datei hochladen
-files = {'files': open('data.xml', 'rb')}
-data = {'file_type': 'sdat'}
-response = requests.post("http://localhost:8000/upload", files=files, data=data)
-
-# Alle Daten löschen
-response = requests.get("http://localhost:8000/clear")
+#### Validierungsfehler
+```json
+{
+  "success": false,
+  "error": "Datei zu gross: Maximale Grösse ist 10MB"
+}
 ```
 
-### JavaScript
-
-```javascript
-// ESL-Daten abrufen
-const eslResponse = await fetch('http://localhost:8000/data-esl');
-const eslData = await eslResponse.json();
-
-// SDAT-Daten abrufen
-const sdatResponse = await fetch('http://localhost:8000/data-sdat');
-const sdatData = await sdatResponse.json();
-
-// Datei hochladen
-const formData = new FormData();
-formData.append('file_type', 'sdat');
-formData.append('files', fileInput.files[0]);
-
-const uploadResponse = await fetch('http://localhost:8000/upload', {
-  method: 'POST',
-  body: formData
-});
-
-// Alle Daten löschen
-const clearResponse = await fetch('http://localhost:8000/clear');
+#### Server-Fehler
+```json
+{
+  "success": false,
+  "error": "Interner Server-Fehler beim Verarbeiten der Datei"
+}
 ```
 
 ## Datenverarbeitung
 
 ### Deduplizierung
 
-- **SDAT-Daten**: Duplikate werden basierend auf dem vollständigen Eintrag erkannt und entfernt
-- **ESL-Daten**: Duplikate werden basierend auf dem Monat erkannt und entfernt
+#### SDAT-Daten
+- Duplikate werden basierend auf dem vollständigen Eintrag erkannt
+- Vergleichskriterien: documentID, interval, resolution, data
+- Neuere Daten überschreiben ältere Duplikate
+
+#### ESL-Daten
+- Duplikate werden basierend auf dem Monat erkannt
+- Vergleichskriterium: month
+- Alle ESL-Einträge für denselben Monat werden zusammengeführt
 
 ### Validierung
 
-- **SDAT-Dateien**: Nur gültige SDAT-Einträge werden gespeichert
-- **ESL-Dateien**: Alle ESL-Einträge werden gespeichert
+#### SDAT-Validierung
+- XML-Struktur muss sdat-Format entsprechen
+- DocumentID muss ID742 oder ID735 sein
+- Zeitstempel müssen gültige ISO-8601-Formate sein
+- Resolution muss 15 Minuten betragen
 
-## Versionierung
+#### ESL-Validierung
+- XML-Struktur muss ESL-Format entsprechen
+- Monatsformat muss YYYY-MM sein
+- OBIS-Codes müssen gültig sein
+- Werte müssen numerisch sein
 
-Aktuelle API-Version: `v1.0`
+## Performance
 
-Die API verwendet keine explizite Versionsnummerierung in der URL. Breaking Changes werden in zukünftigen Versionen dokumentiert.
+### Optimierungen
+- **Asynchrone Verarbeitung**: Dateien werden asynchron verarbeitet
+- **Memory Management**: Effiziente Speichernutzung bei grossen Dateien
+- **Caching**: Häufig abgerufene Daten werden gecacht
 
-## Support
+### Limits
+- **Dateigrösse**: Maximale Dateigrösse pro Upload: 10MB
+- **Anzahl Dateien**: Maximale Anzahl Dateien pro Request: 10
+- **Timeout**: Request-Timeout: 30 Sekunden
 
-Bei Fragen zur API wenden Sie sich an das Entwicklungsteam oder erstellen Sie ein Issue im Repository. 
+## Sicherheit
+
+### CORS-Konfiguration
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+### Dateivalidierung
+- **XML-Struktur**: Validierung der XML-Dokumentstruktur
+- **File Size**: Begrenzung der Dateigrösse
+- **File Type**: Überprüfung der Dateiendungen (.xml)
+
+### Input-Sanitization
+- **XML-Parsing**: Sichere XML-Verarbeitung mit xml.etree.ElementTree
+- **Data Validation**: Typprüfung und Bereichsvalidierung
+- **Error Handling**: Umfassende Exception-Behandlung
+
+## Monitoring
+
+### Logging
+- **Level**: INFO für Produktion, DEBUG für Entwicklung
+- **Format**: Strukturierte Logs mit Zeitstempel
+- **Output**: Console-Logging
+
+### Metriken
+- **Response Times**: API-Antwortzeiten
+- **Upload Success Rate**: Erfolgsrate bei Uploads
+- **Error Rates**: Fehlerquoten nach Endpunkt
+
+## Beispiele
+
+### Python-Client
+
+```python
+import requests
+
+# Datei hochladen
+with open('data.xml', 'rb') as f:
+    files = {'files': f}
+    data = {'file_type': 'sdat'}
+    response = requests.post('http://localhost:8000/upload', files=files, data=data)
+    print(response.json())
+
+# Daten abrufen
+response = requests.get('http://localhost:8000/data-sdat')
+data = response.json()
+print(data)
+```
+
+### JavaScript-Client
+
+```javascript
+// Datei hochladen
+const formData = new FormData();
+formData.append('file_type', 'sdat');
+formData.append('files', fileInput.files[0]);
+
+fetch('http://localhost:8000/upload', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => console.log(data));
+
+// Daten abrufen
+fetch('http://localhost:8000/data-sdat')
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+### cURL-Beispiele
+
+```bash
+# Alle SDAT-Daten abrufen
+curl "http://localhost:8000/data-sdat"
+
+# Alle ESL-Daten abrufen
+curl "http://localhost:8000/data-esl"
+
+# Mehrere Dateien hochladen
+curl -X POST "http://localhost:8000/upload" \
+  -F "file_type=sdat" \
+  -F "files=@file1.xml" \
+  -F "files=@file2.xml"
+
+# Alle Daten löschen
+curl "http://localhost:8000/clear"
+```
+
+## Troubleshooting
+
+### Häufige Probleme
+
+#### "Backend nicht erreichbar"
+- Überprüfen Sie, ob das Backend läuft (Port 8000)
+- Prüfen Sie die Firewall-Einstellungen
+- Starten Sie das Backend neu
+
+#### "Ungültige XML-Datei"
+- Überprüfen Sie das XML-Format
+- Stellen Sie sicher, dass es sich um sdat/ESL-Dateien handelt
+- Validieren Sie die XML-Struktur
+
+#### "Datei zu gross"
+- Teilen Sie grosse Dateien auf
+- Komprimieren Sie die Dateien
+- Überprüfen Sie die Dateigrösse (max. 10MB)
+
+---
+
+**Entwickelt für die Energieagentur Bünzli**  
+*Projektgruppe 1 – M306*  
+*Version 1.0 - Juli 2025* 

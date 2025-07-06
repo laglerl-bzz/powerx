@@ -29,22 +29,13 @@ PowerX ist eine Softwarelösung zur Verarbeitung und Visualisierung von Stromzä
 .\setup.ps1
 ```
 
-**Windows (Command Prompt):**
-```cmd
-setup.bat
-```
-
-**Linux/macOS:**
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-Die Setup-Skripte führen automatisch alle notwendigen Schritte aus:
+Das Setup-Skript führt automatisch alle notwendigen Schritte aus:
 - ✅ Prüfung der Systemvoraussetzungen
 - ✅ Installation der Abhängigkeiten
 - ✅ Erstellung der Virtual Environment
-- ✅ Erstellung von Start-Skripten
+- ✅ Automatisches Starten von Backend und Frontend
+
+**Hinweis**: Das Setup-Skript ist nur für Windows PowerShell verfügbar. Für andere Betriebssysteme verwenden Sie bitte das manuelle Setup.
 
 ### Manuelles Setup
 
@@ -139,8 +130,6 @@ m306-powerx/
 │   └── vite.config.ts
 ├── docs/                     # Dokumentation
 ├── setup.ps1                 # Windows PowerShell Setup
-├── setup.sh                  # Linux/macOS Setup
-├── setup.bat                 # Windows Command Prompt Setup
 └── README.md
 ```
 

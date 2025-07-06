@@ -4,13 +4,76 @@
 
 PowerX ist eine benutzerfreundliche Software zur Visualisierung und Analyse von Stromzählerdaten. Diese Anwendung wurde speziell für die Schweizer Energiewirtschaft entwickelt und unterstützt die Verarbeitung von sdat- und ESL-Dateien.
 
+## Installation
+
+### Automatische Installation (Windows)
+
+**Voraussetzungen:**
+- Windows 10/11
+- PowerShell 5.1 oder höher
+- Python 3.8+ (wird automatisch geprüft)
+- Node.js 16+ (wird automatisch geprüft)
+
+**Installation:**
+1. Öffnen Sie PowerShell als Administrator
+2. Navigieren Sie zum PowerX-Verzeichnis
+3. Führen Sie das Setup-Skript aus:
+   ```powershell
+   .\setup.ps1
+   ```
+
+Das Setup-Skript führt automatisch alle notwendigen Schritte aus:
+- ✅ Prüfung der Systemvoraussetzungen
+- ✅ Installation der Python-Abhängigkeiten
+- ✅ Installation der Node.js-Abhängigkeiten
+- ✅ Automatisches Starten von Backend und Frontend
+
+### Manuelle Installation (Andere Betriebssysteme)
+
+**Voraussetzungen:**
+- Python 3.8+
+- Node.js 16+
+- npm oder yarn
+
+**Backend Setup:**
+```bash
+cd backend
+python -m venv .venv
+pip install -r requirements.txt
+```
+
+**Frontend Setup:**
+```bash
+cd frontend
+npm install
+```
+
 ## Schnellstart
 
 ### 1. Anwendung starten
 
-1. Öffnen Sie Ihren Webbrowser
-2. Navigieren Sie zu: `http://localhost:5173`
-3. Die PowerX-Anwendung wird geladen
+**Nach automatischer Installation:**
+- Die Anwendung startet automatisch nach dem Setup
+- Backend läuft auf: `http://localhost:8000`
+- Frontend läuft auf: `http://localhost:5173`
+
+**Nach manueller Installation:**
+1. Backend starten:
+   ```bash
+   cd backend
+   source .venv/bin/activate  # Linux/macOS
+   # oder
+   .venv\Scripts\activate.bat  # Windows
+   uvicorn src.main:app --reload
+   ```
+
+2. Frontend starten (neues Terminal):
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+3. Öffnen Sie Ihren Webbrowser und navigieren Sie zu: `http://localhost:5173`
 
 ### 2. Erste Schritte
 
@@ -189,6 +252,17 @@ Die Hauptseite zeigt interaktive Diagramme Ihrer Stromdaten:
 
 ### Häufige Probleme
 
+#### Installation-Fehler
+**Problem**: "PowerShell Execution Policy"
+- **Lösung**: Führen Sie `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` aus
+
+**Problem**: "Python nicht gefunden"
+- **Lösung**: Installieren Sie Python 3.8+ von https://www.python.org/
+- **Lösung**: Stellen Sie sicher, dass Python im PATH ist
+
+**Problem**: "Node.js nicht gefunden"
+- **Lösung**: Installieren Sie Node.js 16+ von https://nodejs.org/
+
 #### Upload-Fehler
 **Problem**: "Ungültige XML-Datei"
 - **Lösung**: Überprüfen Sie das XML-Format
@@ -198,76 +272,21 @@ Die Hauptseite zeigt interaktive Diagramme Ihrer Stromdaten:
 - **Lösung**: Teilen Sie grosse Dateien auf
 - **Lösung**: Komprimieren Sie die Dateien
 
-#### Anzeige-Fehler
-**Problem**: "Keine Daten verfügbar"
-- **Lösung**: Überprüfen Sie den gewählten Zeitraum
-- **Lösung**: Laden Sie Daten hoch
+#### Anwendungsfehler
+**Problem**: "Backend nicht erreichbar"
+- **Lösung**: Überprüfen Sie, ob das Backend läuft (Port 8000)
+- **Lösung**: Starten Sie das Backend neu
 
-**Problem**: Diagramm lädt nicht
-- **Lösung**: Seite neu laden
-- **Lösung**: Browser-Cache leeren
+**Problem**: "Frontend nicht erreichbar"
+- **Lösung**: Überprüfen Sie, ob das Frontend läuft (Port 5173)
+- **Lösung**: Starten Sie das Frontend neu
 
-#### Performance-Probleme
-**Problem**: Langsame Ladezeiten
-- **Lösung**: Reduzieren Sie die Datenmenge
-- **Lösung**: Verwenden Sie kleinere Zeiträume
+## Support
 
-### Support
-
-Bei technischen Problemen:
-
-1. **Browser-Konsole prüfen**
-   - F12 drücken
-   - Fehlermeldungen notieren
-
-2. **Daten überprüfen**
-   - XML-Format validieren
-   - Dateigrösse prüfen
-
-3. **Support kontaktieren**
-   - Fehlermeldung dokumentieren
-   - Schritte zur Reproduktion notieren
-
-## Best Practices
-
-### Datenqualität
-- Verwenden Sie valide XML-Dateien
-- Überprüfen Sie die Daten vor dem Upload
-- Regelmässige Backups erstellen
-
-### Arbeitsablauf
-- Laden Sie zuerst SDAT-Dateien hoch
-- Dann ESL-Dateien für Zählerstände
-- Verwenden Sie konsistente Zeiträume
-
-### Analyse
-- Beginnen Sie mit der Monatsansicht
-- Verwenden Sie Presets für spezifische Analysen
-- Exportieren Sie wichtige Daten
-
-## Glossar
-
-**SDAT**: Schweizer Datenaustauschformat für Verbrauchswerte
-
-**ESL**: Elektronischer Stromzähler für Zählerstände
-
-**OBIS**: Object Identification System für Zählerdaten
-
-**HT/NT**: Hochtarif/Niedertarif
-
-**ID742**: Bezeichner für Strombezug
-
-**ID735**: Bezeichner für Stromeinspeisung
-
-## Updates und Änderungen
-
-### Version 1.0
-- Erste Veröffentlichung
-- Grundlegende Visualisierung
-- Upload-Funktionalität
-- Export-Features
+Bei technischen Problemen oder Fragen wenden Sie sich an das Entwicklungsteam oder erstellen Sie ein Issue im Repository.
 
 ---
 
-**Haben Sie Fragen?**  
-Kontaktieren Sie das Entwicklungsteam oder erstellen Sie ein Issue im Repository. 
+**Entwickelt für die Energieagentur Bünzli**  
+*Projektgruppe 1 – M306*  
+*Version 1.0 - Juli 2025* 

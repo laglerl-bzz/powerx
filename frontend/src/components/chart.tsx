@@ -12,7 +12,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Download, BarChart3 } from "lucide-react"
 import { eslBigData } from "../data-esl-big"
 import { sdatBig } from "../data-sdat-big"
-import { sdatMonthlyData as sdatMonthlyDataFile } from "../data-sdat-monthly"
 import { cn } from "@/lib/utils"
 
 type ChartConfig = {
@@ -100,7 +99,13 @@ const transformSDATData = (data: SDATResponse["sdat-data"]) => {
         sequence: point.sequence,
         volume: point.volume,
         timestamp: pointTime.getTime(),
-        documentID: entry.documentID
+        documentID: entry.documentID,
+        date: pointTime.toISOString().slice(0, 10), // Add date for day view
+        fullDate: pointTime.toLocaleDateString("de-DE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        }) + " " + timeLabel // Add full date with time for tooltip
       })
     })
   })
@@ -113,9 +118,11 @@ const transformSDATData = (data: SDATResponse["sdat-data"]) => {
       const key = point.time
       if (!allTimePoints[key]) {
         allTimePoints[key] = {
-          month: point.time,
           time: point.time,
-          timestamp: point.timestamp
+          timestamp: point.timestamp,
+          date: point.date, // Add date for day view
+          day: point.date, // Add day field with the date
+          fullDate: point.fullDate // Add full date with time for tooltip
         }
       }
       if (docId.includes('ID735')) {
@@ -289,7 +296,10 @@ export function ChartComp({ preset = "", onTimespanChange, onConfigChange, class
           const itemDate = new Date(d.timestamp);
           return itemDate.getTime() >= startOfLatestDay.getTime();
         });
-        return { data: filteredData, config: sdatConfig as ChartConfig };
+        
+        // Sort the filtered data in ascending order (oldest first) for left-to-right display
+        const sortedFilteredData = filteredData.sort((a: any, b: any) => a.timestamp - b.timestamp);
+        return { data: sortedFilteredData, config: sdatConfig as ChartConfig };
       }
 
       if (timespan === "month") {
@@ -444,16 +454,45 @@ export function ChartComp({ preset = "", onTimespanChange, onConfigChange, class
 
   // Function to download data as CSV
   const downloadCSV = () => {
+    // Remove 'month' field for day view
+    let exportData = currentData;
+    if (selectedTimespan === "day") {
+      exportData = currentData.map(({ month, ...rest }) => rest);
+    }
     // Create CSV header row
-    const headers = Object.keys(currentData[0]).join(',');
+    const headers = Object.keys(exportData[0]).join(',');
 
     // Create CSV content rows
-    const csvRows = currentData.map((row: any) =>
+    const csvRows = exportData.map((row: any) =>
       Object.values(row).join(',')
     );
 
     // Combine header and rows
     const csvContent = [headers, ...csvRows].join('\n');
+
+    // Generate filename with date range
+    let filename = 'power-data';
+    if (exportData.length > 0) {
+      if (selectedTimespan === "day") {
+        // For day view, use the day from the first data point
+        const firstDate = exportData[0].day || exportData[0].date || new Date(exportData[0].timestamp).toISOString().slice(0, 10);
+        filename = `power-data-day-${firstDate}`;
+      } else if (selectedTimespan === "month") {
+        // For month view, use the date range
+        const firstDate = exportData[0].month || new Date(exportData[0].timestamp).toISOString().slice(0, 10);
+        const lastDate = exportData[exportData.length - 1].month || new Date(exportData[exportData.length - 1].timestamp).toISOString().slice(0, 10);
+        filename = `power-data-month-${firstDate}-to-${lastDate}`;
+      } else if (selectedTimespan === "year") {
+        // For year view, use the year from the first data point
+        const firstDate = exportData[0].month || new Date(exportData[0].timestamp).toISOString().slice(0, 7);
+        filename = `power-data-year-${firstDate}`;
+      } else {
+        // For total view, use current date
+        filename = `power-data-total-${new Date().toISOString().slice(0, 10)}`;
+      }
+    } else {
+      filename = `power-data-${new Date().toISOString().slice(0, 10)}`;
+    }
 
     // Create downloadable blob
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -462,7 +501,7 @@ export function ChartComp({ preset = "", onTimespanChange, onConfigChange, class
     // Create temporary link and trigger download
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `power-data-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `${filename}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -471,8 +510,37 @@ export function ChartComp({ preset = "", onTimespanChange, onConfigChange, class
 
   // Function to download data as JSON
   const downloadJSON = () => {
+    // Remove 'month' field for day view
+    let exportData = currentData;
+    if (selectedTimespan === "day") {
+      exportData = currentData.map(({ month, ...rest }) => rest);
+    }
     // Create JSON string from data
-    const jsonContent = JSON.stringify(currentData, null, 2);
+    const jsonContent = JSON.stringify(exportData, null, 2);
+
+    // Generate filename with date range
+    let filename = 'power-data';
+    if (exportData.length > 0) {
+      if (selectedTimespan === "day") {
+        // For day view, use the day from the first data point
+        const firstDate = exportData[0].day || exportData[0].date || new Date(exportData[0].timestamp).toISOString().slice(0, 10);
+        filename = `power-data-day-${firstDate}`;
+      } else if (selectedTimespan === "month") {
+        // For month view, use the date range
+        const firstDate = exportData[0].month || new Date(exportData[0].timestamp).toISOString().slice(0, 10);
+        const lastDate = exportData[exportData.length - 1].month || new Date(exportData[exportData.length - 1].timestamp).toISOString().slice(0, 10);
+        filename = `power-data-month-${firstDate}-to-${lastDate}`;
+      } else if (selectedTimespan === "year") {
+        // For year view, use the year from the first data point
+        const firstDate = exportData[0].month || new Date(exportData[0].timestamp).toISOString().slice(0, 7);
+        filename = `power-data-year-${firstDate}`;
+      } else {
+        // For total view, use current date
+        filename = `power-data-total-${new Date().toISOString().slice(0, 10)}`;
+      }
+    } else {
+      filename = `power-data-${new Date().toISOString().slice(0, 10)}`;
+    }
 
     // Create downloadable blob
     const blob = new Blob([jsonContent], { type: 'application/json' });
@@ -481,7 +549,7 @@ export function ChartComp({ preset = "", onTimespanChange, onConfigChange, class
     // Create temporary link and trigger download
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `power-data-${new Date().toISOString().slice(0, 10)}.json`);
+    link.setAttribute('download', `${filename}.json`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -567,7 +635,7 @@ export function ChartComp({ preset = "", onTimespanChange, onConfigChange, class
                     className="stroke-muted-foreground/20"
                   />
                   <XAxis
-                    dataKey="month"
+                    dataKey={selectedTimespan === "day" ? "time" : "month"}
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}

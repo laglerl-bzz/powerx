@@ -43,6 +43,54 @@ PowerX ist eine Full-Stack-Webanwendung zur Verarbeitung und Visualisierung von 
 - **CORS**: FastAPI CORS Middleware
 - **File Handling**: Python Standard Library
 
+## Installation und Deployment
+
+### Automatische Installation (Windows)
+
+**Voraussetzungen:**
+- Windows 10/11
+- PowerShell 5.1+
+- Python 3.8+
+- Node.js 16+
+
+**Setup-Skript:**
+```powershell
+.\setup.ps1
+```
+
+Das Setup-Skript führt folgende Schritte automatisch aus:
+1. Systemvoraussetzungen prüfen
+2. Python Virtual Environment erstellen
+3. Backend-Abhängigkeiten installieren
+4. Frontend-Abhängigkeiten installieren
+5. Backend und Frontend automatisch starten
+
+### Manuelle Installation
+
+**Backend Setup:**
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# oder
+.venv\Scripts\activate.bat  # Windows
+pip install -r requirements.txt
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend Setup:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Ports und URLs
+
+- **Backend API**: `http://localhost:8000`
+- **Frontend**: `http://localhost:5173`
+- **API Documentation**: `http://localhost:8000/docs`
+
 ## Datenmodelle
 
 ### SDAT-Datenstruktur
@@ -199,12 +247,73 @@ interface UploadState {
 }
 ```
 
+### Routing
+
+```typescript
+interface Routes {
+  "/": HomePage;
+  "/upload": UploadPage;
+}
+```
+
+## Backend-Architektur
+
+### Dateistruktur
+
+```
+backend/
+├── src/
+│   ├── main.py              # FastAPI-Anwendung
+│   └── json_parser.py       # XML-Parser
+├── data/                    # Datenspeicher
+│   ├── esl-total.json
+│   └── sdat-total.json
+└── requirements.txt         # Python-Abhängigkeiten
+```
+
+### Hauptkomponenten
+
+#### FastAPI-Anwendung (main.py)
+- **CORS-Konfiguration**: Erlaubt Cross-Origin-Requests
+- **File Upload**: Multipart-Form-Data-Handling
+- **Error Handling**: Umfassende Exception-Behandlung
+- **Data Storage**: JSON-basierte Datenspeicherung
+
+#### XML-Parser (json_parser.py)
+- **SDAT-Parser**: Verarbeitet Verbrauchswerte
+- **ESL-Parser**: Verarbeitet Zählerstände
+- **Validation**: XML-Struktur-Validierung
+- **Data Transformation**: Konvertierung zu JSON-Format
+
+### Datenpersistierung
+
+#### Speicherformat
+- **Dateibasiert**: JSON-Dateien im `data/`-Verzeichnis
+- **Struktur**: Separate Dateien für SDAT und ESL-Daten
+- **Backup**: Automatische Sicherung vor Überschreibung
+
+#### Datenintegrität
+- **Deduplizierung**: Automatische Duplikatserkennung
+- **Validierung**: Format- und Strukturprüfung
+- **Error Recovery**: Robuste Fehlerbehandlung
+
+## Performance-Optimierungen
+
+### Frontend
+- **Lazy Loading**: Komponenten werden bei Bedarf geladen
+- **Memoization**: React.memo für Performance-kritische Komponenten
+- **Bundle Splitting**: Code-Splitting mit Vite
+- **Caching**: Browser-Cache für statische Assets
+
+### Backend
+- **Async Processing**: Asynchrone Dateiverarbeitung
+- **Memory Management**: Effiziente Speichernutzung
+- **Error Handling**: Graceful Degradation bei Fehlern
+
 ## Sicherheit
 
 ### CORS-Konfiguration
 ```python
-from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -214,39 +323,61 @@ app.add_middleware(
 )
 ```
 
-### File Upload Security
-```python
-def validate_xml_file(file: UploadFile) -> bool:
-    """Validiert XML-Dateien vor Verarbeitung"""
-    # Dateityp-Validierung
-    if not file.filename.endswith('.xml'):
-        raise ValueError("Invalid file type")
-    
-    # XML-Struktur-Validierung
-    try:
-        content = file.file.read()
-        ET.fromstring(content)
-        return True
-    except ET.ParseError:
-        raise ValueError("Invalid XML structure")
+### Dateivalidierung
+- **XML-Struktur**: Validierung der XML-Dokumentstruktur
+- **File Size**: Begrenzung der Dateigrösse
+- **File Type**: Überprüfung der Dateiendungen
+
+### Input-Sanitization
+- **XML-Parsing**: Sichere XML-Verarbeitung
+- **Data Validation**: Typprüfung und Bereichsvalidierung
+
+## Monitoring und Logging
+
+### Logging-Konfiguration
+- **Level**: INFO für Produktion, DEBUG für Entwicklung
+- **Format**: Strukturierte Logs mit Zeitstempel
+- **Output**: Console und Datei-Logging
+
+### Performance-Monitoring
+- **Response Times**: API-Antwortzeiten
+- **Memory Usage**: Speicherverbrauch
+- **Error Rates**: Fehlerquoten
+
+## Deployment
+
+### Produktionsumgebung
+- **Web Server**: Nginx oder Apache
+- **Process Manager**: PM2 oder systemd
+- **SSL/TLS**: HTTPS-Verschlüsselung
+- **Load Balancer**: Für hohe Verfügbarkeit
+
+### Container-Deployment
+```dockerfile
+# Backend Dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-## Datenfluss
+## Wartung und Updates
 
-### Upload-Prozess
-1. Benutzer wählt Dateityp (SDAT/ESL)
-2. Dateien werden hochgeladen
-3. Backend parst XML und konvertiert zu JSON
-4. Daten werden dedupliziert und gespeichert
-5. Erfolgs-/Fehlermeldung wird zurückgegeben
+### Regelmässige Wartung
+- **Log-Rotation**: Automatische Log-Datei-Rotation
+- **Data Backup**: Regelmässige Datensicherung
+- **Dependency Updates**: Sicherheitsupdates für Abhängigkeiten
 
-### Visualisierung
-1. Frontend lädt alle Daten vom Backend
-2. Daten werden im Frontend nach Zeitraum gefiltert
-3. Gefilterte Daten werden in Charts visualisiert
-4. Benutzer kann verschiedene Zeiträume auswählen
+### Update-Prozess
+1. **Backup**: Datensicherung vor Update
+2. **Testing**: Tests in Staging-Umgebung
+3. **Deployment**: Rollout in Produktion
+4. **Verification**: Funktionsprüfung nach Update
 
 ---
 
-**Technische Dokumentation Version 1.0**  
-*Letzte Aktualisierung: Dezember 2024* 
+**Entwickelt für die Energieagentur Bünzli**  
+*Projektgruppe 1 – M306*  
+*Version 1.0 - Juli 2025* 
